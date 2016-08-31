@@ -7,7 +7,10 @@ In order to link the calendar, a Google Calendar API key and OAUTH authenticatio
   
 My events_from_cal.py file is basically a modified version of this example to parse the data from the calendar that I wanted. 
 One of the daily events in my google calendar is titled "Contributions" and the description contains everyone's contributions.
+
 Another daily event is titled "Resting" and this will trigger changing the radio station to a relaxing pandora station of mine if the radio is running.
+
+Fonts are included from the fonts.google.com library.
 
 All (shoddy) artwork was created by me using Inkscape.
 
