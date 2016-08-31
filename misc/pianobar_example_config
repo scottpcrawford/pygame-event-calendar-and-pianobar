@@ -1,0 +1,7 @@
+audio_quality = low
+user = name@example.com
+password = hunter2
+tls_fingerprint = 13CC51AC0C31CD96C55015C76914360F7AC41A00
+autostart_station = 123123123123123123
+fifo = /home/pi/.config/pianobar/ctl
+event_command = /home/pi/.config/pianobar/scripts/eventcmd.sh
