@@ -176,9 +176,10 @@ class Game(object):
 		drawing_list.append((self.grass, (0, 1030)))
 		
 		# print the weather
-		description =  ['current: ', 'temperature: ', 'sunrise: ', 'sunset: ', 'wind: ']
-		wx_list = [self.weather_observation['status'].capitalize(), '%0.0f'%self.weather_observation['temperature']+u'\xb0F', self.weather_observation['sunrise'].strftime('%H:%M'),
-					self.weather_observation['sunset'].strftime('%H:%M'), str(self.weather_observation['wind']['deg'])+u'\xb0'+' at '+str(self.weather_observation['wind']['speed'])+'mph']
+		description =  ['current: ', 'temperature: ', 'humidity: ', 'sunrise: ', 'sunset: ', 'wind: ']
+		wx_list = [self.weather_observation['status'].capitalize(), '%0.0f'%self.weather_observation['temperature']+u'\xb0F',str(self.weather_observation['humidity'])+'%', 
+					self.weather_observation['sunrise'].strftime('%H:%M'), self.weather_observation['sunset'].strftime('%H:%M'), 
+					str(self.weather_observation['wind']['deg'])+u'\xb0'+' at '+str(self.weather_observation['wind']['speed'])+'mph']
 		for index, item in enumerate(wx_list):
 					text = create_text((description[index]+item), font_preferences, 24, self.HEADER_COLOR)
 					drawing_list.append((text, (1600, 800+25*index)))
