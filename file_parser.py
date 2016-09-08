@@ -39,7 +39,7 @@ def return_list(file):
 			if line not in tmp_list:
 				tmp_list.append(line)
 	except:
-		tmp_list = ['Error creating your list, check that this file exists: '+file]
+		tmp_list = ['Error creating your list, check that this file exists: '+file, 'check the misc/ folder for an example '+file]
 		print('error creating your list. '+file+' probably does not exist... returning a dummy list')
 	return tmp_list
 
