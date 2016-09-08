@@ -61,7 +61,7 @@ def main():
     service = discovery.build('calendar', 'v3', http=http)
 
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    #print('Getting the upcoming 10 events')
+    #print('Getting the upcoming 30 events')
     eventsResult = service.events().list(
         calendarId=google_calendar_id, timeMin=now, maxResults=30, singleEvents=True,
         orderBy='startTime').execute()
@@ -71,8 +71,13 @@ def main():
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
             end = event['end'].get('dateTime', event['end'].get('date'))
-            target.write(start+' : '+end+' : '+event['summary']+'\n')
-            if event['summary'] == 'Contributions':
+            if 'Goals' in event['summary']:
+                with open('goals.txt', 'w') as f:
+                    f.write(event.get('description'))
+            else:
+                target.write(start+' : '+end+' : '+event['summary']+'\n')
+           #if event['summary'] == 'Contributions':
+            if 'Contributions' in event['summary']:
                 with open('contributions.txt','w') as f:
                     f.write(event.get('description'))
         if not events:
