@@ -1,3 +1,4 @@
 img/bg/Thumbs.db
 *.db
 *.pyc
+api_keys.py
