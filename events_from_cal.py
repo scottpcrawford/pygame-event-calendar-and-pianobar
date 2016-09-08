@@ -6,7 +6,7 @@ from apiclient import discovery
 import oauth2client
 from oauth2client import client
 from oauth2client import tools
-from api_keys import *
+from api_keys import google_calendar_id
 import datetime
 
 try:
