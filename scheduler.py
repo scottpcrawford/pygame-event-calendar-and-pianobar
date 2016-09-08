@@ -64,9 +64,8 @@ class Game(object):
 		self.BGIMG  = load_gfx(os.path.join('img', 'bg'))
 		self.keymap_dict = {pg.K_n: 'n', pg.K_PLUS: '+', pg.K_KP_PLUS: '+', pg.K_EQUALS: '+', pg.K_MINUS: '-', pg.K_KP_MINUS: '-', 
 							pg.K_p: 'p', pg.K_SPACE: 'p', pg.K_q: 'q', pg.K_r: 'r', pg.K_s: 's', pg.K_1: 's6\n', pg.K_2: 's4\n', 
-							pg.K_3: 's15\n', pg.K_4: 's25\n', pg.K_5: 's48\n', pg.K_6: 's37\n', pg.K_7: 's52\n', pg.K_8: 's58\n'}
+							pg.K_3: 's15\n', pg.K_4: 's25\n', pg.K_5: 's48\n', pg.K_6: 's37\n', pg.K_7: 's52\n', pg.K_8: 's16\n'}
 
-	
 	def update_calendar(self):
 		update_cal()
 		self.goals = return_list('goals.txt')
@@ -79,7 +78,6 @@ class Game(object):
 		else:
 			self.RESTING = True
 			print('resting is:',self.RESTING)	
-
 
 	def update_quote(self):
 		self.phrase = random.choice(self.quote_list)
@@ -164,7 +162,6 @@ class Game(object):
 			self.all_sprites_list.remove(self.day_clouds)
 			self.all_sprites_list.add(self.night_clouds)
 		#print(self.all_sprites_list)
-
 
 	def draw_text(self, mylist):
 		for item in mylist:
@@ -287,7 +284,6 @@ def load_gfx(directory,colorkey=(0,0,0),accept=(".png",".jpg",".bmp")):
             graphics[name]=img
     return graphics
 
-
 def display_time_until(event):
 	et = dateutil.parser.parse(event[0])
 	ct = dateutil.parser.parse(datetime.now().isoformat()).replace(microsecond=0)
@@ -315,8 +311,6 @@ def update_event_lists(filename):
 			future_evts.append(the_event)
 	return curr_evts,future_evts
 
-
-	
 
 def main():
 	pg.init()
