@@ -1,12 +1,17 @@
 
 import pygame as pg
-import time, random, sys, datetime, dateutil.parser, os
+import time, random, sys, dateutil.parser, os 
+from datetime import datetime
 
 # import functions from my files
 from run_pianobar import start_pianobar, process_input, get_song_data
 from setup_fonts import create_text, font_preferences, header_font
 from file_parser import readfile, parse_line, return_list, update_cal
-from cloud import *
+from cloud import Cloud
+from weather import Weather
+
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
 
 class Game(object):
 	def __init__(self, screen):
@@ -16,37 +21,44 @@ class Game(object):
 		self.fps = 60
 		self.RADIO_STATION = '39' # or 1591330390268116913
 		self.BACKGROUND_IMG = 'img/bg/day_tree.png'
-		self.SCREEN_WIDTH = 1920
-		self.SCREEN_HEIGHT = 1080
+		self.SCREEN_WIDTH = SCREEN_WIDTH
+		self.SCREEN_HEIGHT = SCREEN_HEIGHT
 		self.RADIO_RUNNING = False
 		self.RESTING = False
-		#self.background = pg.Surface((1920,1080))
-		#self.background = pg.image.load(self.BACKGROUND_IMG)
-		#self.background.set_colorkey(pg.Color('black'))
-		#self.background = self.background.convert()
+		self.SHOWGOALS = False
 		self.grass = 'img/bg/day_grass.png'
 		self.day_clouds = pg.sprite.RenderUpdates()
 		self.night_clouds = pg.sprite.RenderUpdates()
 		self.all_sprites_list = pg.sprite.RenderUpdates()
 		self.quote_list = return_list('quotes.txt')
 		self.contributions = return_list('contributions.txt')
+		self.goals = return_list('goals.txt')
+		self.weather = Weather()
+		self.weather_observation = {}
 		self.phrase = random.choice(self.quote_list)
-		self.cwd = os.getcwd()
+		self.cwd = os.getcwd() #windows
 		#self.cwd = '/home/pi/.config/pianobar' # linux
 		## DAIYE COLORS ###
 		self.HEADER_COLOR = pg.Color('black')
 		self.CONTENT_COLOR = pg.Color('indianred4')
 		self.BG_COLOR = pg.Color('skyblue')
+		self.current_events = []
+		self.upcoming_events = []
+		
 		# User events:
 		self.UPDATECALENDAR = pg.USEREVENT + 1
 		self.UPDATEQUOTE = pg.USEREVENT + 2
 		self.NIGHTRADIO = pg.USEREVENT + 3
-		self.UPDATEWEATHER = pg.USEREVENT + 4
+		self.CHANGESTATE = pg.USEREVENT + 4
+		self.UPDATEWEATHER = pg.USEREVENT + 5
+		#self.SHOWGOALS = pg.USEREVENT + 6
 		pg.time.set_timer(self.UPDATECALENDAR, 60000) #update calendar every 60 seconds     
 		pg.time.set_timer(self.UPDATEQUOTE, 20000) #update quote every 20 seconds
-		pg.time.set_timer(self.NIGHTRADIO,300000)
-		#pg.time.set_timer(self.UPDATEWEATHER, 600000)
-		pg.time.set_timer(self.UPDATEWEATHER, 6000)
+		pg.time.set_timer(self.NIGHTRADIO,300000) # check for relaxation radio time
+		pg.time.set_timer(self.UPDATEWEATHER, 600000)
+		pg.time.set_timer(self.CHANGESTATE, 300000)
+		#pg.time.set_timer(self.SHOWGOALS, 6000)
+		
 		self.DAYGFX = load_gfx(os.path.join("img", "clouds", "day"))
 		self.NTGFX = load_gfx(os.path.join("img", "clouds", "night"))
 		self.BGIMG  = load_gfx(os.path.join('img', 'bg'))
@@ -57,11 +69,24 @@ class Game(object):
 	
 	def update_calendar(self):
 		update_cal()
+		self.goals = return_list('goals.txt')
 		self.contributions = return_list('contributions.txt')
+		self.current_events,self.upcoming_events = update_event_lists('calevents.txt')
+		if not any('Resting' in s for s in self.current_events):
+			self.RESTING = False
+			print('not resting. setting to False and restarting timer')
+			pg.time.set_timer(self.NIGHTRADIO,30000)
+		else:
+			self.RESTING = True
+			print('resting is:',self.RESTING)	
+
 
 	def update_quote(self):
 		self.phrase = random.choice(self.quote_list)
+		self.SHOWGOALS = not self.SHOWGOALS
 
+	def update_weather(self):
+		self.weather_observation = self.weather.get_weather_observation()
 
 	def event_loop(self):
 		for event in pg.event.get():
@@ -70,12 +95,14 @@ class Game(object):
 	def get_event(self, event):
 		if event.type == pg.QUIT:
 			self.done = True
-		elif event.type == self.UPDATEWEATHER:
+		elif event.type == self.CHANGESTATE:
 			self.change_state()
 		elif event.type == self.UPDATECALENDAR:
 			self.update_calendar()
 		elif event.type == self.UPDATEQUOTE:
 			self.update_quote()
+		elif event.type == self.UPDATEWEATHER:
+			self.update_weather()
 		elif event.type == self.NIGHTRADIO:
 			if self.RESTING and self.RADIO_RUNNING:
 				process_input('s41\n')
@@ -112,17 +139,20 @@ class Game(object):
 
 	def change_state(self):
 		#global self.HEADER_COLOR, self.CONTENT_COLOR, self.BG_COLOR
-		hour = int(time.strftime('%H'))
+		#hour = int(time.strftime('%H'))
+		#if self.BG_COLOR == pg.Color('black'):
+		curtime = datetime.now().strftime('%H:%M')
+		settime = self.weather.sunset.strftime('%H:%M')
+		risetime = self.weather.sunrise.strftime('%H:%M')
 
+		if (curtime > risetime) and (curtime < settime): # Day Time
 		#if hour > 7 and hour < 20: # Day Time
-		if self.BG_COLOR == pg.Color('black'):
+		#if self.BG_COLOR == pg.Color('black'):
 			self.HEADER_COLOR = pg.Color('black')
 			self.CONTENT_COLOR = pg.Color('indianred4')
 			self.BG_COLOR = pg.Color('skyblue')
 			self.background = self.BGIMG['day_tree']
 			self.grass = self.BGIMG['day_grass']
-			#self.background.set_colorkey(pg.Color('black'))
-			#self.background.convert()
 			self.all_sprites_list.remove(self.night_clouds)
 			self.all_sprites_list.add(self.day_clouds)
 		else: # Night Time
@@ -131,11 +161,9 @@ class Game(object):
 			self.BG_COLOR = pg.Color('black')
 			self.background = self.BGIMG['night_tree']
 			self.grass = self.BGIMG['night_grass']
-			#self.background.set_colorkey(pg.Color('black'))
-			#self.background.convert()
 			self.all_sprites_list.remove(self.day_clouds)
 			self.all_sprites_list.add(self.night_clouds)
-		print(self.all_sprites_list)
+		#print(self.all_sprites_list)
 
 
 	def draw_text(self, mylist):
@@ -146,74 +174,92 @@ class Game(object):
 		drawing_list = []
 		drawing_list.append((self.background, (900,165)))
 		drawing_list.append((self.grass, (0, 1030)))
-		current_events,upcoming_events = update_event_lists('calevents.txt')
-		disp_curr_header = create_text('Happening Now:', header_font, 36, self.HEADER_COLOR)			
-		drawing_list.append((disp_curr_header, (5,0)))
-		if not current_events:
-			disp_no_curr_evts = create_text('No Active Events', font_preferences, 48, self.CONTENT_COLOR)
-			drawing_list.append((disp_no_curr_evts, (35,100)))
-			self.RESTING = False
-		else:
-			for item in current_events:
-				disp_curr_evts = create_text(item[2]+' ('+item[0][11:16]+' - '+item[1][11:16]+')',font_preferences,48,self.CONTENT_COLOR)
-				drawing_list.append((disp_curr_evts, (35, 60+50*current_events.index(item))))
+		
+		# print the weather
+		description =  ['current: ', 'temperature: ', 'sunrise: ', 'sunset: ', 'wind: ']
+		wx_list = [self.weather_observation['status'].capitalize(), '%0.0f'%self.weather_observation['temperature']+u'\xb0F', self.weather_observation['sunrise'].strftime('%H:%M'),
+					self.weather_observation['sunset'].strftime('%H:%M'), str(self.weather_observation['wind']['deg'])+u'\xb0'+' at '+str(self.weather_observation['wind']['speed'])+'mph']
+		for index, item in enumerate(wx_list):
+					text = create_text((description[index]+item), font_preferences, 24, self.HEADER_COLOR)
+					drawing_list.append((text, (1600, 800+25*index)))
 
-				if item[2] == 'Resting' and not self.RESTING:
-					print('I am in the current event loop. Setting RESTING to True')
-					self.RESTING = True
-				elif item[2] == 'Resting' and self.RESTING:
-					break
-				else: # item is anything other than Resting
-					self.RESTING = False
-				  #  print('Not resting. Setting RESTING to False and restarting the Timer...')
-					pg.time.set_timer(self.NIGHTRADIO,300000)
-		disp_contrib_header = create_text('Weekly Contributions:', header_font, 36, self.HEADER_COLOR)
-		drawing_list.append((disp_contrib_header, (5,350)))
-		for index, item in enumerate(self.contributions):
-			disp_contibution = create_text(item,font_preferences,48,self.CONTENT_COLOR)
-			drawing_list.append((disp_contibution, (35, 400+50*index)))
-		disp_upcom_header = create_text('Coming Up: ',header_font, 24, self.HEADER_COLOR)
-		drawing_list.append((disp_upcom_header, (5,800)))
-		for item in upcoming_events[0:3]:
-			disp_upcoming_evts = create_text(item[2]+' ('+item[0][11:16]+' - '+item[1][11:16]+')',font_preferences,24, pg.Color('steelblue4'))
-			drawing_list.append((disp_upcoming_evts,(25,840+40*upcoming_events.index(item))))
-		disp_ct = create_text(time.strftime('%x  %H:%M'),font_preferences,36, self.HEADER_COLOR) # display current system time
-		drawing_list.append((disp_ct, (1615, 1000)))
-		if len(current_events) > 0:
-			disp_tr = create_text('Time Remaining: '+display_time_remaining(current_events), font_preferences, 36, self.HEADER_COLOR) # display time remaining until next event ends
-			drawing_list.append((disp_tr, (1500,0)))
-		disp_phrase = create_text(self.phrase, font_preferences, 36, self.HEADER_COLOR)
-		drawing_list.append((disp_phrase, (5,1000)))
+		# print current events
+		text = create_text('Happening Now:', header_font, 36, self.HEADER_COLOR)			
+		drawing_list.append((text, (5,0)))
+		if not self.current_events:
+			text = create_text('No Active Events', font_preferences, 48, self.CONTENT_COLOR)
+			drawing_list.append((text, (35,60)))
+
+			# print the time until next event
+			text = create_text('Next Event Starts in: '+display_time_until(self.upcoming_events[0]), font_preferences, 36, self.HEADER_COLOR) # display time remaining until next event ends
+			drawing_list.append((text, (1500,0)))
+
+		else:
+			for index, item in enumerate(self.current_events):
+				text = create_text(item[2]+' ('+item[0][11:16]+' - '+item[1][11:16]+')',font_preferences,48,self.CONTENT_COLOR)
+				drawing_list.append((text, (35, 60+50*index)))
+
+			# print the time remaining
+			text = create_text('Time Remaining: '+display_time_remaining(self.current_events[0]), font_preferences, 36, self.HEADER_COLOR) # display time remaining until next event ends
+			drawing_list.append((text, (1500,0)))	
+
+		# print upcoming events 
+		text = create_text('Coming Up: ',header_font, 28, self.HEADER_COLOR)
+		drawing_list.append((text, (5,70+50*(len(self.current_events)+1))))
+		for index, item in enumerate(self.upcoming_events[0:3]):
+			text = create_text(item[2]+' ('+item[0][11:16]+' - '+item[1][11:16]+')',font_preferences,28, pg.Color('steelblue4'))
+			drawing_list.append((text,(25,110+50*(len(self.current_events)+1)+40*index)))		
+
+		# print contributions or goals
+		silly_list = []
+		if self.SHOWGOALS:
+			text = create_text('Personal Goals:', header_font, 36, self.HEADER_COLOR)
+			silly_list = self.goals
+		else:
+			text = create_text('Weekly Contributions:', header_font, 36, self.HEADER_COLOR)
+			silly_list = self.contributions
+		drawing_list.append((text, (5,500)))
+		for index, item in enumerate(silly_list):
+			text = create_text(item,font_preferences,48,self.CONTENT_COLOR)
+			drawing_list.append((text, (35, 540+50*index)))
+		
+		# display current system time
+		text = create_text(time.strftime('%x  %H:%M'),font_preferences,36, self.HEADER_COLOR) 
+		drawing_list.append((text, (1615, 1000)))
+
+		#print the random quote
+		text = create_text(self.phrase, font_preferences, 28, self.HEADER_COLOR)
+		drawing_list.append((text, (5,1000)))
+
 		# Show Now Playing
 		if self.RADIO_RUNNING:
-			disp_np_header = create_text('Now Playing:', font_preferences, 24, self.HEADER_COLOR)
-			drawing_list.append((disp_np_header, (1500,60)))
+			text = create_text('Now Playing:', font_preferences, 24, self.HEADER_COLOR)
+			drawing_list.append((text, (1500,60)))
 			description = ['Artist:   ','Song:    ','Album:   ','Station:  ']
 			now_playing_list = get_song_data()
 			if len(now_playing_list) == 4:
 				for index, item in enumerate(now_playing_list):
-					disp_np_song = create_text(description[index]+item, header_font, 24, self.CONTENT_COLOR)
-					drawing_list.append((disp_np_song, (1520, 90+28*index)))
+					text = create_text(description[index]+item, header_font, 24, self.CONTENT_COLOR)
+					drawing_list.append((text, (1520, 90+28*index)))
 			else:
 				print ('now playing list did not update properly.  We\'ll get \'em next time')
 		else: 
 		#print a message
-			disp_np = create_text('To start radio, type CTRL-M', font_preferences, 24, self.HEADER_COLOR)
-			drawing_list.append((disp_np, (1600, 100)))
+			text = create_text('To start radio, type CTRL-M', font_preferences, 24, self.HEADER_COLOR)
+			drawing_list.append((text, (1600, 100)))
 		return drawing_list
 
 	def run(self):
 		while not self.done:
 			self.screen.fill(self.BG_COLOR)
-
 			self.event_loop()	# check for outside input
 			drawing_list = self.update_text()
-			self.all_sprites_list.update() #move all the clouds
+			self.all_sprites_list.update() # move all the clouds
 			self.all_sprites_list.draw(self.screen)
 			self.draw_text(drawing_list) # draw text
 			pg.display.update()
 			self.clock.tick(self.fps)
-			print ("fps: ", self.clock.get_fps())
+			#print ("fps: ", self.clock.get_fps())
 			
 
 	def create_sprites(self):
@@ -241,9 +287,14 @@ def load_gfx(directory,colorkey=(0,0,0),accept=(".png",".jpg",".bmp")):
     return graphics
 
 
+def display_time_until(event):
+	et = dateutil.parser.parse(event[0])
+	ct = dateutil.parser.parse(datetime.now().isoformat()).replace(microsecond=0)
+	return str((et-ct))
+
 def display_time_remaining(event):
-	et = dateutil.parser.parse(event[0][1])
-	ct = dateutil.parser.parse(datetime.datetime.now().isoformat()).replace(microsecond=0)
+	et = dateutil.parser.parse(event[1])
+	ct = dateutil.parser.parse(datetime.now().isoformat()).replace(microsecond=0)
 	return str((et-ct))
 			
 def update_event_lists(filename):
@@ -252,7 +303,7 @@ def update_event_lists(filename):
 	content = readfile(filename)
 	curr_evts = []
 	future_evts = []
-	curr_time = datetime.datetime.now().isoformat()
+	curr_time = datetime.now().isoformat()
 	for line in content:
 		text = parse_line(line)
 		start_time,end_time,event = text[0],text[1],text[2]
@@ -267,13 +318,14 @@ def update_event_lists(filename):
 	
 
 def main():
-	update_cal()
 	pg.init()
 	pg.mouse.set_visible(False) # hide the pointer
 	screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.FULLSCREEN) # windows
 	#screen = pg.display.set_mode((1920, 1080), pg.NOFRAME) # linux
 	game = Game(screen)
 	game.create_sprites()
+	game.update_calendar()
+	game.update_weather()
 	game.change_state()
 	game.run()
 	exit(0)
