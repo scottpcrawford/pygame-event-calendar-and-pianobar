@@ -36,8 +36,8 @@ class Game(object):
 		self.weather = Weather()
 		self.weather_observation = {}
 		self.phrase = random.choice(self.quote_list)
-		self.cwd = os.getcwd() #windows
-		#self.cwd = '/home/pi/.config/pianobar' # linux
+		#self.cwd = os.getcwd() #windows
+		self.cwd = '/home/pi/.config/pianobar' # linux
 		## DAIYE COLORS ###
 		self.HEADER_COLOR = pg.Color('black')
 		self.CONTENT_COLOR = pg.Color('indianred4')
@@ -320,8 +320,8 @@ def update_event_lists(filename):
 def main():
 	pg.init()
 	pg.mouse.set_visible(False) # hide the pointer
-	screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.FULLSCREEN) # windows
-	#screen = pg.display.set_mode((1920, 1080), pg.NOFRAME) # linux
+	#screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.FULLSCREEN) # windows
+	screen = pg.display.set_mode((1920, 1080), pg.NOFRAME) # linux
 	game = Game(screen)
 	game.create_sprites()
 	game.update_calendar()
